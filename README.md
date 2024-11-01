@@ -1,3 +1,17 @@
+# Менеджер задач
+
+## Установка
+
+1. Клонируйте репозиторий.
+	```
+	git clone https://github.com/neojelll/task-IPBKE
+	```
+
+2. Запустите `docker-compose` командой:
+	```
+	docker-compose up -d
+	```
+
 ## Use Cases
 
 ### UC-1: Регистрация пользователя
@@ -9,6 +23,17 @@
 	1. Пользователь отправляет POST-запрос на `/auth/register` с именем пользователя или паролем.
 	2. Сервер создает новую учетную запись и генерирует хеш пароля.
 	3. Сервер возвращает ответ об успешной регистрации с сообщением.
+- Пример запроса:
+	```
+	curl -X 'POST' \
+  	'http://localhost:8000/auth/register' \
+  	-H 'accept: application/json' \
+  	-H 'Content-Type: application/json' \
+  	-d '{
+  	"username": "<username>",
+  	"password": "<password>"
+	}'
+	```
 - Результат: Создана новая учетная запись пользователя, и пользователь может войти в систему.
 
 ### UC-2: Вход в систему
@@ -20,6 +45,14 @@
 	1. Пользователь отправляет POST-запрос на `/auth/login` с именем пользователя и паролем.
 	2. Сервер проверяет учетные данные пользователя и генерирует access-токен и refresh-токен.
 	3. Сервер возвращает ответ об успешном входе с access-токеном и refresh-токеном.
+- Пример запроса:
+	```
+	curl -X 'POST' \
+  	'http://localhost:8000/auth/login' \
+  	-H 'accept: application/json' \
+  	-H 'Content-Type: application/x-www-form-urlencoded' \
+  	-d 'grant_type=password&username=<username>&password=<password>&scope=&client_id=string&client_secret=string'
+	```
 - Результат: Пользователь вошел в систему, и сгенерировал access-токен.
 
 ### UC-3: Обновление access-токена
@@ -31,6 +64,13 @@
 	1. Пользователь остправляет POST-запрос на `/auth/refresh` с refresh-токеном.
 	2. Сервер проверяет refresh-токен и генерирует новый access-токен.
 	3. Сервер возвращает ответ с новым access-токеном.
+- Пример запроса:
+	```
+	curl -X 'POST' \
+  	'http://localhost:8000/auth/refresh?refresh_token=<your-refresh-token>' \
+  	-H 'accept: application/json' \
+  	-d ''
+	```
 - Результат: Сгенерирован новый access-токен, и пользователь может продолжать использовать систему.
 
 ### UC-4: Создание задачи
@@ -42,6 +82,19 @@
 	1. Пользователь отправляет POST-запрос на `/tasks` с деталями задачи (название, описание, статус).
 	2. Сервер создает новую задачу и связывает ее с пользователем.
 	3. Сервер возвращает ответ об успешном создании задачи с ее деталями.
+- Пример запроса:
+	```
+	curl -X 'POST' \
+  	'http://localhost:8000/tasks' \
+  	-H 'accept: application/json' \
+  	-H 'Content-Type: application/json' \
+  	-H 'Authorization: Bearer <your-access-token>' \
+  	-d '{
+  	"task_name": "<task-name>",
+  	"description": "<description>",
+  	"status": "<status>"
+	}'
+	```
 - Результат: Создана новая задача, и пользователь может ее просматрривать и управлять ею.
 
 ### UC-5: Получение задач
@@ -51,7 +104,23 @@
 - Триггер: Пользователь хочет просмотреть свои задачи.
 - Описание:
 	1. Пользователь отправляет GET-запрос на `/tasks`.
+	- также есть необязательный параметр `filter_status`, для фильтрации задач по ключевому слову независимо от регистра(**Поддерживается только латиница**)
 	2. Сервер извлекает задачи пользователя и возвращает их в ответе.
+- Пример запроса:
+	1. Без фильтра:
+		```
+		curl -X 'GET' \
+  		'http://localhost:8000/tasks' \
+  		-H 'accept: application/json' \
+  		-H 'Content-Type: application/json' \
+  		-H 'Authorization: Bearer <your-access-token>'
+  		```
+	2. С фильтром:
+		```
+		curl -X GET "http://localhost:8000/tasks?filter_status=<filter-word>" \
+     	-H "Content-Type: application/json" \
+     	-H "Authorization: Bearer <your-access-token>"
+		```
 - Результат: Пользователь может просматривать свои задачи.
 
 ### UC-6: Обновление задачи
@@ -62,6 +131,19 @@
 - Описание:
 	1. Пользователь отправляет PUT-запрос на `/tasks/{id}` с обновленными деталями задачи.
 	2. Сервер обновляет задачу и возвращает ответ об успешном обновлении.
+- Пример Запроса:
+	```
+	curl -X 'PUT' \
+  	'http://localhost:8000/task/1' \
+  	-H 'accept: application/json' \
+  	-H 'Content-Type: application/json' \
+	-H 'Authorization: Bearer <your-access-token>' \
+  	-d '{
+  	"task_name": "<new-task-name>",
+  	"description": "<new-description>",
+  	"status": "<new-status>"
+	}'
+	```
 - Результат: Задача обновлена, и пользователь может видеть изменения.
 
 ### UC-7: Удаление задачи
@@ -72,4 +154,11 @@
 - Описание:
 	1. Пользователь отправляет DELETE-запрос на `/task/{id}`.
 	2. Сервер удаляет задачу и возвращает ответ об успешном удалении.
+- Пример запроса:
+	```
+	curl -X 'DELETE' \
+  	'http://localhost:8000/task/<task-id>' \
+  	-H 'accept: application/json' \
+	-H 'Authorization: Bearer <your-access-token>'
+	```
 - Результат: Задача удалена, и пользователь больше не может ее просматривать.
