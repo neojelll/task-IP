@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
 )
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_
 from .auth import get_password_hash
 from .schemas import UserCreate, TaskCreate, TaskUpdate
 from .models import User, Task
@@ -11,7 +11,6 @@ from .logger import configure_logger
 from loguru import logger
 from fastapi import HTTPException, status
 import os
-import re
 
 
 configure_logger()
@@ -63,21 +62,18 @@ class DataBase:
         except Exception as e:
             logger.error(f"Error when created task: {e}")
 
-    async def read_tasks(self, user_id, filter):
+    async def read_tasks(self, user_id, filter_status):
         try:
-            if filter is None:
-                result = await self.session.execute(
-                    select(Task).where(Task.user_id == user_id)
-                )
-                return result.scalars().all()
+            query = select(Task).where(Task.user_id == user_id)
 
-            pattern = re.escape(filter.lower())
-            result = await self.session.execute(
-                select(Task).where(
-                    func.lower(Task.status).regexp(pattern) & (Task.user_id == user_id)
+            if filter_status is not None:
+                query = query.where(
+                    and_(func.lower(Task.status) == filter_status.lower())
                 )
-            )
-            return result.scalars().all()
+
+            result = await self.session.execute(query)
+            tasks = result.scalars().all()
+            return tasks
         except Exception as e:
             logger.error(f"Error when read task: {e}")
 
