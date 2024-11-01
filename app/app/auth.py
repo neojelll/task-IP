@@ -3,7 +3,12 @@ from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from .cache import Cache
 from datetime import datetime, timedelta
+from .logger import configure_logger
+from loguru import logger
 import secrets
+
+
+configure_logger()
 
 
 SECRET_KEY = secrets.token_urlsafe(32)
@@ -23,19 +28,25 @@ async def get_password_hash(password):
 
 
 async def create_access_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.now() + timedelta(minutes=30)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    try:
+        to_encode = data.copy()
+        expire = datetime.now() + timedelta(minutes=30)
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+    except Exception as e:
+        logger.error(f"Error when created access njrty: {e}")
 
 
 async def create_refresh_token(data: dict):
-    to_encode = data.copy()
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    async with Cache() as cache:
-        await cache.create_recording(to_encode.get("sub"), encoded_jwt)
-    return encoded_jwt
+    try:
+        to_encode = data.copy()
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        async with Cache() as cache:
+            await cache.create_recording(to_encode.get("sub"), encoded_jwt)
+        return encoded_jwt
+    except Exception as e:
+        logger.error(f"Error when created refresh token: {e}")
 
 
 async def decode_token(token: str):
