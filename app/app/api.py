@@ -8,7 +8,7 @@ from .auth import (
 )
 from .cache import Cache
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi import FastAPI, Depends, HTTPException, status, Header
+from fastapi import FastAPI, Depends, HTTPException, status, Header, Query
 from jose import JWTError
 from .logger import configure_logger
 from loguru import logger
@@ -110,7 +110,9 @@ async def create_task(task: TaskCreate, authorization: str = Header(None)):
 
 
 @app.get("/tasks")
-async def read_tasks(authorization: str = Header(None), filter_status=None):
+async def read_tasks(
+    authorization: str = Header(None), filter_status: str = Query(None)
+):
     logger.debug(f"Start read_task, params: {authorization, filter_status}")
     username = await verify_token(authorization)
     async with DataBase() as db:
